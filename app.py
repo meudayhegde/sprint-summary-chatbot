@@ -4,7 +4,7 @@ An interactive AI-powered chatbot for analyzing sprint data with visualizations.
 """
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,6 +17,7 @@ from config import settings
 from data_analyzer import SprintDataAnalyzer
 from agent import SprintAnalysisAgent
 from dashboard_analyzer import DashboardAnalyzer
+from sprint_report_generator import SprintReportGenerator
 
 # Configure logging
 logging.basicConfig(
@@ -49,11 +50,12 @@ templates = Jinja2Templates(directory="templates")
 data_analyzer = None
 agent = None
 dashboard_analyzer = None
+report_generator = None
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize the data analyzer and agent on startup."""
-    global data_analyzer, agent, dashboard_analyzer
+    global data_analyzer, agent, dashboard_analyzer, report_generator
     
     try:
         logger.info(f"Loading data from {settings.data_file}")
@@ -64,6 +66,9 @@ async def startup_event():
         
         logger.info("Initializing dashboard analyzer")
         dashboard_analyzer = DashboardAnalyzer(data_analyzer.df)
+        
+        logger.info("Initializing report generator")
+        report_generator = SprintReportGenerator(data_analyzer.df)
         
         logger.info("Application startup complete")
     except Exception as e:
@@ -233,6 +238,51 @@ async def get_raw_data():
         raise HTTPException(status_code=500, detail="Dashboard analyzer not initialized")
     
     return dashboard_analyzer.get_raw_data()
+
+
+# Sprint History API endpoints
+@app.get("/api/sprint-history/list")
+async def get_sprint_history_list():
+    """Get list of all sprints."""
+    if not report_generator:
+        raise HTTPException(status_code=500, detail="Report generator not initialized")
+    
+    try:
+        return report_generator.get_sprint_list()
+    except Exception as e:
+        logger.error(f"Error getting sprint list: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/sprint-history/download/{sprint_id}")
+async def download_sprint_report(sprint_id: str):
+    """Download Word report for a specific sprint."""
+    if not report_generator:
+        raise HTTPException(status_code=500, detail="Report generator not initialized")
+    
+    try:
+        logger.info(f"Generating report for sprint {sprint_id}")
+        
+        # Generate the report
+        report_buffer = report_generator.generate_sprint_report(sprint_id)
+        
+        # Create filename
+        filename = f"{sprint_id}_Sprint_Report.docx"
+        
+        # Return as streaming response
+        return StreamingResponse(
+            report_buffer,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
+    except ValueError as e:
+        logger.error(f"Sprint not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error generating report: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

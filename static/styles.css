@@ -618,3 +618,159 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #a0aec0;
 }
+
+/* Sprint History Styles */
+.section-description {
+    color: #718096;
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+.sprint-history-container {
+    position: relative;
+    min-height: 300px;
+}
+
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 20px;
+    color: #718096;
+}
+
+.loading-spinner p {
+    font-size: 16px;
+}
+
+.sprint-table {
+    font-size: 13px;
+}
+
+.sprint-table th {
+    white-space: nowrap;
+    font-size: 13px;
+    padding: 14px 12px;
+}
+
+.sprint-table td {
+    padding: 14px 12px;
+    vertical-align: middle;
+}
+
+.sprint-id {
+    font-weight: 600;
+    color: #667eea;
+}
+
+.sprint-duration {
+    font-size: 12px;
+    color: #718096;
+}
+
+.sprint-metrics {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.metric-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.metric-badge.success {
+    background: #c6f6d5;
+    color: #22543d;
+}
+
+.metric-badge.warning {
+    background: #feebc8;
+    color: #744210;
+}
+
+.metric-badge.danger {
+    background: #fed7d7;
+    color: #742a2a;
+}
+
+.delivery-percentage {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.delivery-percentage.good {
+    color: #48bb78;
+}
+
+.delivery-percentage.medium {
+    color: #ed8936;
+}
+
+.delivery-percentage.low {
+    color: #f56565;
+}
+
+.team-members-cell {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    color: #718096;
+}
+
+.download-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+}
+
+.download-btn:active {
+    transform: translateY(0);
+}
+
+.download-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.download-btn .icon {
+    font-size: 14px;
+}
+
+.sprint-stats {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.stat-value {
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.stat-label {
+    font-size: 11px;
+    color: #a0aec0;
+    text-transform: uppercase;
+}
+

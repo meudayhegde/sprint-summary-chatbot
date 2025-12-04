@@ -149,11 +149,37 @@
 
             <!-- Sprint History View -->
             <div class="view-content" id="sprint-history-view" style="display: none;">
-                <div class="placeholder-content">
-                    <div class="placeholder-icon">📅</div>
-                    <h2>Sprint History</h2>
-                    <p>Sprint history view coming soon...</p>
-                </div>
+                <section class="dashboard-section">
+                    <h2 class="section-title">Sprint History</h2>
+                    <p class="section-description">View and download comprehensive reports for all completed sprints</p>
+                    
+                    <div class="sprint-history-container">
+                        <div class="loading-spinner" id="sprint-loading">
+                            <p>Loading sprint history...</p>
+                        </div>
+                        
+                        <div class="table-container" id="sprint-table-container" style="display: none;">
+                            <table id="sprint-history-table" class="data-table sprint-table">
+                                <thead>
+                                    <tr>
+                                        <th>Sprint ID</th>
+                                        <th>Duration</th>
+                                        <th>Total Items</th>
+                                        <th>Completed</th>
+                                        <th>Story Points</th>
+                                        <th>Delivery %</th>
+                                        <th>Team Size</th>
+                                        <th>Team Members</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sprint-history-tbody">
+                                    <!-- Sprint rows will be dynamically inserted -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
             </div>
 
             <!-- Chatbot View -->
@@ -196,5 +222,6 @@
 
     <script src="/static/app.js"></script>
     <script src="/static/dashboard.js"></script>
+    <script src="/static/sprint-history.js"></script>
 </body>
 </html>

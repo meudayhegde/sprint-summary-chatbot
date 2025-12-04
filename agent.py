@@ -1,12 +1,13 @@
 """
 LangChain agent for analyzing sprint data with multi-LLM support.
 Supports OpenAI, Google Gemini, and Anthropic Claude models.
+Uses real pandas DataFrame analysis with tool calling for accurate data-driven responses.
 """
 
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_anthropic import ChatAnthropic
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from typing import Optional, Dict, Any, List
 import pandas as pd
 import json
@@ -15,19 +16,33 @@ import re
 
 from data_analyzer import SprintDataAnalyzer
 from chart_generator import ChartGenerator
+from data_analysis_tools import DataAnalysisTools
+from dataframe_query_executor import DataFrameQueryExecutor
 from config import settings
 
 logger = logging.getLogger(__name__)
 
 
 class SprintAnalysisAgent:
-    """Simplified agent for sprint data analysis with chart generation."""
+    """
+    Advanced agent for sprint data analysis with real pandas DataFrame operations.
+    Uses tools to execute actual data queries and calculations.
+    """
     
     def __init__(self, data_analyzer: SprintDataAnalyzer):
         self.data_analyzer = data_analyzer
         self.chart_generator = ChartGenerator()
         self.llm = self._initialize_llm()
-        logger.info("Sprint Analysis Agent initialized with direct LLM approach")
+        
+        # Initialize data analysis components
+        self.query_executor = DataFrameQueryExecutor(data_analyzer.df)
+        self.analysis_tools_factory = DataAnalysisTools(data_analyzer.df)
+        self.tools = self.analysis_tools_factory.get_all_tools()
+        
+        # Create tool map for easy access
+        self.tool_map = {tool.name: tool for tool in self.tools}
+        
+        logger.info(f"Sprint Analysis Agent initialized with {len(self.tools)} data analysis tools")
     
     def _initialize_llm(self):
         """Initialize the appropriate LLM based on configuration."""
@@ -40,7 +55,7 @@ class SprintAnalysisAgent:
                 return ChatOpenAI(
                     model=settings.openai_model,
                     api_key=settings.openai_api_key,
-                    temperature=0.1
+                    temperature=0.0  # Use 0 for deterministic analysis
                 )
             elif provider == "gemini":
                 if not settings.google_api_key:
@@ -48,7 +63,7 @@ class SprintAnalysisAgent:
                 return ChatGoogleGenerativeAI(
                     model=settings.gemini_model,
                     google_api_key=settings.google_api_key,
-                    temperature=0.1
+                    temperature=0.0
                 )
             elif provider == "anthropic":
                 if not settings.anthropic_api_key:
@@ -56,7 +71,7 @@ class SprintAnalysisAgent:
                 return ChatAnthropic(
                     model=settings.anthropic_model,
                     api_key=settings.anthropic_api_key,
-                    temperature=0.1
+                    temperature=0.0
                 )
             else:
                 raise ValueError(f"Unsupported LLM provider: {provider}")
@@ -64,162 +79,176 @@ class SprintAnalysisAgent:
             logger.error(f"Error initializing LLM: {str(e)}")
             raise
     
-
-    
-    def _get_data_summary(self, input_str: str = "") -> str:
-        """Tool function to get data summary."""
-        summary = self.data_analyzer.get_data_summary()
-        return json.dumps(summary, indent=2)
-    
-    def _get_sprint_summary(self, sprint_id: str = "") -> str:
-        """Tool function to get sprint summary."""
-        sprint_id = sprint_id.strip() if sprint_id else None
-        summary = self.data_analyzer.get_sprint_summary(sprint_id)
-        return json.dumps(summary, indent=2)
-    
-    def _get_team_performance(self, input_str: str = "") -> str:
-        """Tool function to get team performance."""
-        performance = self.data_analyzer.get_team_performance()
-        return json.dumps(performance, indent=2)
-    
-    def _get_bug_analysis(self, input_str: str = "") -> str:
-        """Tool function to get bug analysis."""
-        analysis = self.data_analyzer.get_bug_analysis()
-        return json.dumps(analysis, indent=2)
-    
-    def _query_tickets(self, query: str) -> str:
-        """Tool function to query tickets."""
-        try:
-            result_df = self.data_analyzer.query_data(query)
-            if result_df.empty:
-                return "No tickets match the query."
-            return result_df.to_json(orient='records', date_format='iso')
-        except Exception as e:
-            return f"Error executing query: {str(e)}"
-    
-    def _get_tickets_by_status(self, status: str) -> str:
-        """Tool function to get tickets by status."""
-        filters = {"Status": status.strip()}
-        result_df = self.data_analyzer.get_filtered_data(filters)
-        if result_df.empty:
-            return f"No tickets with status '{status}'."
-        return result_df[['Ticket_ID', 'Title', 'Type', 'Priority', 'Assignee', 'Story_Points']].to_json(orient='records')
-    
-    def _get_tickets_by_assignee(self, assignee: str) -> str:
-        """Tool function to get tickets by assignee."""
-        filters = {"Assignee": assignee.strip()}
-        result_df = self.data_analyzer.get_filtered_data(filters)
-        if result_df.empty:
-            return f"No tickets assigned to '{assignee}'."
-        return result_df[['Ticket_ID', 'Title', 'Type', 'Status', 'Priority', 'Story_Points']].to_json(orient='records')
-    
-    def _create_status_chart(self, input_str: str = "") -> str:
-        """Tool function to create status chart."""
-        df = self.data_analyzer.get_dataframe()
-        chart_json = self.chart_generator.create_status_pie_chart(df)
-        return chart_json if chart_json else "Unable to create chart"
-    
-    def _create_velocity_chart(self, input_str: str = "") -> str:
-        """Tool function to create velocity chart."""
-        df = self.data_analyzer.get_dataframe()
-        chart_json = self.chart_generator.create_sprint_velocity_chart(df)
-        return chart_json if chart_json else "Unable to create chart"
-    
-    def _create_team_chart(self, input_str: str = "") -> str:
-        """Tool function to create team performance chart."""
-        df = self.data_analyzer.get_dataframe()
-        chart_json = self.chart_generator.create_team_performance_chart(df)
-        return chart_json if chart_json else "Unable to create chart"
-    
-    def _create_priority_chart(self, input_str: str = "") -> str:
-        """Tool function to create priority distribution chart."""
-        df = self.data_analyzer.get_dataframe()
-        chart_json = self.chart_generator.create_priority_distribution_chart(df)
-        return chart_json if chart_json else "Unable to create chart"
-    
-    def _create_bug_chart(self, input_str: str = "") -> str:
-        """Tool function to create bug analysis chart."""
-        df = self.data_analyzer.get_dataframe()
-        chart_json = self.chart_generator.create_bug_severity_chart(df)
-        return chart_json if chart_json else "Unable to create chart"
-    
-
     def query(self, question: str) -> Dict[str, Any]:
         """
-        Process a user question and return the answer with any charts.
+        Process a user question using tool-based data analysis.
         
+        Args:
+            question: User's question about sprint data
+            
         Returns:
             Dict with 'answer' (str) and 'charts' (list of chart JSONs)
         """
         try:
-            return self._process_query_with_llm(question)
-        except Exception as e:
-            logger.error(f"Error processing query: {str(e)}")
+            logger.info(f"Processing query: {question}")
+            
+            # Analyze the question and decide which tools to use
+            tool_calls = self._determine_tool_calls(question)
+            
+            # Execute tool calls and collect results
+            tool_results = []
+            for tool_name, tool_input in tool_calls:
+                if tool_name in self.tool_map:
+                    try:
+                        result = self.tool_map[tool_name].func(tool_input)
+                        tool_results.append({
+                            'tool': tool_name,
+                            'input': tool_input,
+                            'output': result
+                        })
+                    except Exception as e:
+                        logger.error(f"Tool {tool_name} error: {e}")
+            
+            # Use LLM to synthesize results into a natural language answer
+            answer = self._synthesize_answer(question, tool_results)
+            
+            # Generate appropriate charts based on the question
+            charts = self._generate_charts_for_question(question)
+            
+            # Add chart mention if charts were generated
+            if charts and "chart" not in answer.lower() and "visual" not in answer.lower():
+                answer += "\n\n📊 I've generated visual charts to help illustrate this data."
+            
             return {
-                "answer": f"I encountered an error processing your question. Please try rephrasing it.",
+                "answer": answer,
+                "charts": charts
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing query: {str(e)}", exc_info=True)
+            return {
+                "answer": f"I encountered an error analyzing the data. Please try rephrasing your question or ask about specific sprints, teams, or metrics.",
                 "charts": []
             }
     
-    def _process_query_with_llm(self, question: str) -> Dict[str, Any]:
+    def _determine_tool_calls(self, question: str) -> List[tuple]:
         """
-        Process query using LLM with intelligent tool selection.
+        Determine which tools to call based on the question.
+        
+        Args:
+            question: User's question
+            
+        Returns:
+            List of (tool_name, tool_input) tuples
         """
         question_lower = question.lower()
-        charts = []
+        tool_calls = []
         
-        # First, analyze the data and determine what to show
-        data_context = self._get_relevant_data(question_lower)
+        # Extract sprint ID if mentioned
+        sprint_match = re.search(r'spr-\d+', question_lower)
+        sprint_id = sprint_match.group().upper() if sprint_match else None
         
-        # Check if charts are needed
-        chart_needed = any(word in question_lower for word in ['chart', 'graph', 'visualize', 'visualization', 'plot', 'show me'])
+        # Always start with overview if asking general questions
+        if any(word in question_lower for word in ['overview', 'summary', 'all', 'general']):
+            tool_calls.append(('get_data_overview', '{}'))
         
-        # Generate charts if appropriate
-        if chart_needed or 'velocity' in question_lower or 'trend' in question_lower:
-            charts = self._generate_appropriate_charts(question_lower)
+        # Velocity queries
+        if 'velocity' in question_lower:
+            if sprint_id:
+                tool_calls.append(('calculate_sprint_metric', json.dumps({'metric_name': 'velocity', 'sprint_id': sprint_id})))
+            else:
+                tool_calls.append(('analyze_trends', json.dumps({'metric': 'velocity', 'group_by': 'Sprint_ID'})))
         
-        # Use LLM to generate natural language response
-        system_prompt = """You are an expert sprint data analyst with deep knowledge of agile metrics and KPIs.
+        # Completion rate queries
+        if any(word in question_lower for word in ['completion', 'complete', 'done', 'finished']):
+            if sprint_id:
+                tool_calls.append(('calculate_sprint_metric', json.dumps({'metric_name': 'completion_rate', 'sprint_id': sprint_id, 'by': 'points'})))
+            else:
+                tool_calls.append(('analyze_trends', json.dumps({'metric': 'completion_rate', 'group_by': 'Sprint_ID'})))
+        
+        # Team/member queries
+        if any(word in question_lower for word in ['team', 'member', 'assignee', 'who', 'performance']):
+            tool_calls.append(('analyze_team_performance', json.dumps({'metric': 'velocity'})))
+        
+        # Bug queries
+        if 'bug' in question_lower:
+            tool_calls.append(('calculate_quality_metrics', json.dumps({'sprint_id': sprint_id} if sprint_id else {})))
+        
+        # Sprint comparison
+        if 'compare' in question_lower:
+            # Extract multiple sprint IDs
+            sprint_matches = re.findall(r'spr-\d+', question_lower)
+            if len(sprint_matches) >= 2:
+                sprint_ids = [m.upper() for m in sprint_matches]
+                tool_calls.append(('compare_sprints', json.dumps({
+                    'sprint_ids': sprint_ids,
+                    'metrics': ['velocity', 'completion_rate', 'bug_count']
+                })))
+        
+        # Sprint health
+        if 'health' in question_lower and sprint_id:
+            tool_calls.append(('calculate_sprint_health', json.dumps({'sprint_id': sprint_id})))
+        
+        # Work distribution
+        if 'distribution' in question_lower or 'balance' in question_lower:
+            tool_calls.append(('analyze_work_distribution', json.dumps({'sprint_id': sprint_id} if sprint_id else {})))
+        
+        # Cycle time
+        if 'cycle' in question_lower or 'time' in question_lower:
+            tool_calls.append(('calculate_sprint_metric', json.dumps({'metric_name': 'cycle_time_avg', 'status': 'Done'})))
+        
+        # If no specific tool was identified, use get_data_overview
+        if not tool_calls:
+            tool_calls.append(('get_data_overview', '{}'))
+        
+        logger.info(f"Determined tool calls: {[t[0] for t in tool_calls]}")
+        return tool_calls
+    
+    def _synthesize_answer(self, question: str, tool_results: List[Dict]) -> str:
+        """
+        Use LLM to synthesize tool results into a natural language answer.
+        
+        Args:
+            question: Original user question
+            tool_results: List of tool execution results
+            
+        Returns:
+            Natural language answer
+        """
+        if not tool_results:
+            return "I couldn't find relevant data to answer your question. Please try rephrasing or ask about specific sprints, teams, or metrics."
+        
+        # Build context from tool results
+        context_parts = []
+        for result in tool_results:
+            context_parts.append(f"Tool: {result['tool']}\nInput: {result['input']}\nOutput:\n{result['output']}\n")
+        
+        context = "\n---\n".join(context_parts)
+        
+        system_prompt = """You are an expert sprint data analyst. You have just executed data analysis tools and received real results from the sprint database.
 
-**Your Capabilities:**
-1. Analyze sprint data and provide precise, data-driven insights
-2. Calculate derived metrics when not directly available in the data
-3. Compare performance across sprints, teams, and time periods
-4. Identify trends, patterns, and anomalies
+Your task is to synthesize these tool results into a clear, insightful answer to the user's question.
 
-**Key Metrics You Can Calculate:**
-- **Completion Rate**: (Completed tickets or story points / Total tickets or story points) × 100%
-- **Velocity**: Story points completed per sprint
-- **Capacity Utilization**: (Story points completed / Team capacity) × 100%
-- **Bug Resolution Rate**: (Closed bugs / Total bugs) × 100%
-- **Cycle Time**: Average time from start to completion
-- **Team Productivity**: Story points per team member
-- **Work Distribution**: Balance of work across team members
-- **Sprint Progress**: % of work completed vs in-progress vs to-do
-- **Quality Metrics**: Bug ratio, defect density
+**Guidelines:**
+1. Use ONLY the data from the tool results - do not make up numbers
+2. Present the key findings clearly with bullet points
+3. Show calculations when relevant (e.g., "Velocity: 45 points completed")
+4. Provide context and comparisons
+5. Highlight any concerns (critical bugs, low completion rates, etc.)
+6. Be concise but thorough
+7. Use emojis sparingly for emphasis (⚠️ ✅ 📊)
 
-**Instructions:**
-- When asked about metrics not directly provided, calculate them from available data
-- Always show your calculations clearly (e.g., "Completion rate: 15 done / 20 total = 75%")
-- Provide context and insights, not just numbers
-- Compare current performance to averages or previous sprints when relevant
-- Identify red flags (overallocation, blocked tickets, high bug counts)
-- Be concise but thorough, using bullet points for clarity
-- Format percentages, ratios, and trends clearly"""
-        
+**Format:**
+- Start with a direct answer to the question
+- Follow with supporting details
+- End with any recommendations or observations"""
+
         user_prompt = f"""Question: {question}
 
-Available Data Context:
-{data_context}
+Tool Execution Results:
+{context}
 
-**Analysis Instructions:**
-1. Examine the data carefully for both direct values and values that need calculation
-2. If the question asks about a metric not directly provided (like completion rate, velocity, productivity), calculate it from the available data
-3. Show your calculations clearly in the answer
-4. Provide context and insights beyond just numbers
-5. Compare against benchmarks or averages when relevant
-6. Highlight any concerning patterns (low completion rates, many blocked tickets, etc.)
-
-Please provide a clear, data-driven answer with calculated metrics where needed."""
+Please provide a clear, data-driven answer based on the tool results above."""
         
         try:
             messages = [
@@ -229,147 +258,83 @@ Please provide a clear, data-driven answer with calculated metrics where needed.
             
             response = self.llm.invoke(messages)
             answer = response.content if hasattr(response, 'content') else str(response)
+            return answer
             
-            # Mention charts if generated
-            if charts:
-                answer += "\n\nI've generated visual charts to help illustrate this data."
+        except Exception as e:
+            logger.error(f"LLM synthesis error: {e}")
+            # Fallback to simple formatting of results
+            return self._format_results_simple(question, tool_results)
+    
+    def _format_results_simple(self, question: str, tool_results: List[Dict]) -> str:
+        """Fallback method to format results without LLM."""
+        answer_parts = [f"Based on the analysis:"]
+        
+        for result in tool_results:
+            try:
+                result_data = json.loads(result['output'])
+                answer_parts.append(f"\n{json.dumps(result_data, indent=2)}")
+            except:
+                answer_parts.append(f"\n{result['output']}")
+        
+        return "\n".join(answer_parts)
+    
+    def _generate_charts_for_question(self, question: str) -> List[Dict]:
+        """
+        Generate appropriate charts based on the question content.
+        
+        Args:
+            question: User's question
             
-            return {
-                "answer": answer,
-                "charts": charts
-            }
-        except Exception as e:
-            logger.error(f"LLM error: {e}")
-            # Fallback to direct answer
-            return self._direct_query(question)
-    
-    def _get_relevant_data(self, question_lower: str) -> str:
-        """Get relevant data based on the question."""
-        try:
-            if 'bug' in question_lower:
-                return self._get_bug_analysis("")
-            elif 'team' in question_lower or 'performance' in question_lower or 'member' in question_lower:
-                return self._get_team_performance("")
-            elif any(spr in question_lower for spr in ['spr-', 'sprint']):
-                # Try to extract sprint ID
-                match = re.search(r'spr-\d+', question_lower)
-                if match:
-                    return self._get_sprint_summary(match.group().upper())
-                return self._get_sprint_summary("")
-            else:
-                return self._get_data_summary("")
-        except Exception as e:
-            logger.error(f"Error getting data: {e}")
-            return self._get_data_summary("")
-    
-    def _generate_appropriate_charts(self, question_lower: str) -> List[Dict]:
-        """Generate appropriate charts based on question keywords."""
+        Returns:
+            List of chart JSON objects
+        """
+        question_lower = question.lower()
         charts = []
+        df = self.data_analyzer.get_dataframe()
         
         try:
-            if 'velocity' in question_lower:
-                chart_json = self._create_velocity_chart("")
+            # Velocity/sprint trends
+            if any(word in question_lower for word in ['velocity', 'trend', 'progress', 'sprint']):
+                chart_json = self.chart_generator.create_sprint_velocity_chart(df)
                 if chart_json:
                     charts.append(json.loads(chart_json))
             
-            if 'team' in question_lower or 'performance' in question_lower:
-                chart_json = self._create_team_chart("")
+            # Team performance
+            if any(word in question_lower for word in ['team', 'member', 'assignee', 'who', 'performance']):
+                chart_json = self.chart_generator.create_team_performance_chart(df)
                 if chart_json:
                     charts.append(json.loads(chart_json))
             
-            if 'status' in question_lower and 'chart' in question_lower:
-                chart_json = self._create_status_chart("")
+            # Bug analysis
+            if 'bug' in question_lower:
+                chart_json = self.chart_generator.create_bug_severity_chart(df)
                 if chart_json:
                     charts.append(json.loads(chart_json))
             
-            if 'priority' in question_lower and 'chart' in question_lower:
-                chart_json = self._create_priority_chart("")
+            # Status distribution
+            if any(word in question_lower for word in ['status', 'done', 'complete', 'progress', 'distribution']):
+                chart_json = self.chart_generator.create_status_pie_chart(df)
                 if chart_json:
                     charts.append(json.loads(chart_json))
             
-            if 'bug' in question_lower and any(w in question_lower for w in ['chart', 'visualize', 'graph']):
-                chart_json = self._create_bug_chart("")
+            # Priority distribution
+            if 'priority' in question_lower or 'high' in question_lower or 'critical' in question_lower:
+                chart_json = self.chart_generator.create_priority_distribution_chart(df)
                 if chart_json:
                     charts.append(json.loads(chart_json))
             
-            # Default charts for general queries
-            if not charts and any(word in question_lower for word in ['overview', 'summary', 'show me']):
-                chart_json = self._create_status_chart("")
+            # Overview/dashboard
+            if any(word in question_lower for word in ['overview', 'summary', 'dashboard', 'show me']) and not charts:
+                # Add status chart for overview
+                chart_json = self.chart_generator.create_status_pie_chart(df)
                 if chart_json:
                     charts.append(json.loads(chart_json))
+                # Add velocity chart
+                chart_json = self.chart_generator.create_sprint_velocity_chart(df)
+                if chart_json:
+                    charts.append(json.loads(chart_json))
+        
         except Exception as e:
             logger.error(f"Error generating charts: {e}")
         
         return charts
-    
-    def _direct_query(self, question: str) -> Dict[str, Any]:
-        """
-        Fallback method to handle queries directly without agent executor.
-        Uses simple keyword matching and direct tool calls.
-        """
-        question_lower = question.lower()
-        charts = []
-        answer = ""
-        
-        try:
-            # Check for chart requests
-            if any(word in question_lower for word in ['chart', 'graph', 'visualize', 'visualization', 'plot']):
-                if 'velocity' in question_lower or 'sprint' in question_lower:
-                    chart_json = self._create_velocity_chart("")
-                    if chart_json:
-                        charts.append(json.loads(chart_json))
-                        answer = "I've created a sprint velocity chart showing story points by sprint and status."
-                elif 'team' in question_lower or 'performance' in question_lower:
-                    chart_json = self._create_team_chart("")
-                    if chart_json:
-                        charts.append(json.loads(chart_json))
-                        answer = "I've created a team performance chart showing story points by team member."
-                elif 'status' in question_lower:
-                    chart_json = self._create_status_chart("")
-                    if chart_json:
-                        charts.append(json.loads(chart_json))
-                        answer = "I've created a status distribution chart."
-                elif 'priority' in question_lower:
-                    chart_json = self._create_priority_chart("")
-                    if chart_json:
-                        charts.append(json.loads(chart_json))
-                        answer = "I've created a priority distribution chart."
-                elif 'bug' in question_lower:
-                    chart_json = self._create_bug_chart("")
-                    if chart_json:
-                        charts.append(json.loads(chart_json))
-                        answer = "I've created a bug distribution chart by priority and status."
-            
-            # Check for data requests
-            if any(word in question_lower for word in ['summary', 'overview', 'overall']):
-                if 'sprint' in question_lower and any(spr in question.upper() for spr in ['SPR-', 'SPRINT']):
-                    # Extract sprint ID
-                    import re
-                    match = re.search(r'SPR-\d+', question.upper())
-                    if match:
-                        summary = self._get_sprint_summary(match.group())
-                        answer = f"Sprint Summary:\n{summary}"
-                else:
-                    summary = self._get_data_summary("")
-                    answer = f"Overall Data Summary:\n{summary}"
-            elif 'team' in question_lower and 'performance' in question_lower:
-                performance = self._get_team_performance("")
-                answer = f"Team Performance:\n{performance}"
-            elif 'bug' in question_lower:
-                bugs = self._get_bug_analysis("")
-                answer = f"Bug Analysis:\n{bugs}"
-            elif not answer:
-                # Default response
-                summary = self._get_data_summary("")
-                answer = f"Here's a summary of the sprint data:\n{summary}"
-            
-            return {
-                "answer": answer,
-                "charts": charts
-            }
-        except Exception as e:
-            logger.error(f"Error in direct query: {str(e)}")
-            return {
-                "answer": f"I can see your question but encountered an error processing it. Please try rephrasing or ask about: sprint summary, team performance, bug analysis, or request specific charts.",
-                "charts": []
-            }

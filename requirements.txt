@@ -19,6 +19,9 @@ numpy
 plotly
 kaleido
 
+# Document generation
+python-docx
+
 # Configuration and environment
 python-dotenv
 pydantic
