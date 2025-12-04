@@ -1,0 +1,31 @@
+# FastAPI and server
+fastapi
+uvicorn[standard]
+python-multipart
+aiofiles
+
+# LangChain ecosystem
+langchain
+langchain-openai
+langchain-google-genai
+langchain-anthropic
+langchain-experimental
+
+# Data processing and analysis
+pandas
+numpy
+
+# Visualization
+plotly
+kaleido
+
+# Configuration and environment
+python-dotenv
+pydantic
+pydantic-settings
+
+# HTTP client
+httpx
+
+# Templating
+jinja2

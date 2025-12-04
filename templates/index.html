@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint Summary Chatbot</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Sprint Summary Chatbot</h1>
+            <p>AI-powered sprint analytics with interactive visualizations</p>
+        </div>
+        
+        <div class="chat-container" id="chat-container">
+            <div class="welcome-message">
+                <h2>👋 Welcome to Sprint Analytics!</h2>
+                <p>Ask me anything about your sprint data, team performance, or request visualizations.</p>
+                <div class="suggestions">
+                    <div class="suggestion-chip" onclick="sendSuggestion('Show me overall sprint summary')">
+                        📊 Sprint Summary
+                    </div>
+                    <div class="suggestion-chip" onclick="sendSuggestion('How is the team performing?')">
+                        👥 Team Performance
+                    </div>
+                    <div class="suggestion-chip" onclick="sendSuggestion('Show me bug analysis')">
+                        🐛 Bug Analysis
+                    </div>
+                    <div class="suggestion-chip" onclick="sendSuggestion('Create a velocity chart')">
+                        📈 Velocity Chart
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="input-container">
+            <div class="input-wrapper">
+                <input 
+                    type="text" 
+                    id="message-input" 
+                    placeholder="Ask about sprints, tickets, team performance..." 
+                    autocomplete="off"
+                />
+            </div>
+            <button id="send-button" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
