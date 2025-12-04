@@ -178,15 +178,48 @@ class SprintAnalysisAgent:
             charts = self._generate_appropriate_charts(question_lower)
         
         # Use LLM to generate natural language response
-        system_prompt = """You are an expert sprint data analyst. Provide precise, data-driven answers based on the context provided. 
-Be concise but informative. Include specific numbers and metrics. Format your response clearly."""
+        system_prompt = """You are an expert sprint data analyst with deep knowledge of agile metrics and KPIs.
+
+**Your Capabilities:**
+1. Analyze sprint data and provide precise, data-driven insights
+2. Calculate derived metrics when not directly available in the data
+3. Compare performance across sprints, teams, and time periods
+4. Identify trends, patterns, and anomalies
+
+**Key Metrics You Can Calculate:**
+- **Completion Rate**: (Completed tickets or story points / Total tickets or story points) × 100%
+- **Velocity**: Story points completed per sprint
+- **Capacity Utilization**: (Story points completed / Team capacity) × 100%
+- **Bug Resolution Rate**: (Closed bugs / Total bugs) × 100%
+- **Cycle Time**: Average time from start to completion
+- **Team Productivity**: Story points per team member
+- **Work Distribution**: Balance of work across team members
+- **Sprint Progress**: % of work completed vs in-progress vs to-do
+- **Quality Metrics**: Bug ratio, defect density
+
+**Instructions:**
+- When asked about metrics not directly provided, calculate them from available data
+- Always show your calculations clearly (e.g., "Completion rate: 15 done / 20 total = 75%")
+- Provide context and insights, not just numbers
+- Compare current performance to averages or previous sprints when relevant
+- Identify red flags (overallocation, blocked tickets, high bug counts)
+- Be concise but thorough, using bullet points for clarity
+- Format percentages, ratios, and trends clearly"""
         
         user_prompt = f"""Question: {question}
 
 Available Data Context:
 {data_context}
 
-Please provide a clear, informative answer based on this data."""
+**Analysis Instructions:**
+1. Examine the data carefully for both direct values and values that need calculation
+2. If the question asks about a metric not directly provided (like completion rate, velocity, productivity), calculate it from the available data
+3. Show your calculations clearly in the answer
+4. Provide context and insights beyond just numbers
+5. Compare against benchmarks or averages when relevant
+6. Highlight any concerning patterns (low completion rates, many blocked tickets, etc.)
+
+Please provide a clear, data-driven answer with calculated metrics where needed."""
         
         try:
             messages = [

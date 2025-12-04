@@ -3,52 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sprint Summary Chatbot</title>
+    <title>Sprint Analytics Dashboard</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🚀 Sprint Summary Chatbot</h1>
-            <p>AI-powered sprint analytics with interactive visualizations</p>
-        </div>
-        
-        <div class="chat-container" id="chat-container">
-            <div class="welcome-message">
-                <h2>👋 Welcome to Sprint Analytics!</h2>
-                <p>Ask me anything about your sprint data, team performance, or request visualizations.</p>
-                <div class="suggestions">
-                    <div class="suggestion-chip" onclick="sendSuggestion('Show me overall sprint summary')">
-                        📊 Sprint Summary
+    <div class="app-container">
+        <!-- Left Navigation Bar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>🚀 Sprint Analytics</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item active" data-view="dashboard">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Dashboard</span>
+                </li>
+                <li class="nav-item" data-view="sprint-history">
+                    <span class="nav-icon">📅</span>
+                    <span class="nav-label">Sprint History</span>
+                </li>
+                <li class="nav-item" data-view="chatbot">
+                    <span class="nav-icon">💬</span>
+                    <span class="nav-label">Chatbot</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <h1 id="page-title">Dashboard</h1>
+                <p id="page-subtitle">Comprehensive sprint metrics and visualizations</p>
+            </div>
+
+            <!-- Dashboard View -->
+            <div class="view-content" id="dashboard-view">
+                <!-- KPIs Section -->
+                <section class="dashboard-section">
+                    <h2 class="section-title">Key Performance Indicators</h2>
+                    <div class="kpi-grid" id="kpi-grid">
+                        <!-- KPI cards will be dynamically inserted -->
                     </div>
-                    <div class="suggestion-chip" onclick="sendSuggestion('How is the team performing?')">
-                        👥 Team Performance
+                </section>
+
+                <!-- Charts Grid -->
+                <section class="dashboard-section">
+                    <h2 class="section-title">State Distribution</h2>
+                    <div class="chart-container">
+                        <div id="state-distribution-chart" class="chart"></div>
                     </div>
-                    <div class="suggestion-chip" onclick="sendSuggestion('Show me bug analysis')">
-                        🐛 Bug Analysis
+                </section>
+
+                <section class="dashboard-section">
+                    <h2 class="section-title">Velocity Chart</h2>
+                    <div class="chart-container">
+                        <div id="velocity-chart" class="chart"></div>
                     </div>
-                    <div class="suggestion-chip" onclick="sendSuggestion('Create a velocity chart')">
-                        📈 Velocity Chart
+                </section>
+
+                <section class="dashboard-section">
+                    <h2 class="section-title">Cycle Time Analysis</h2>
+                    <div class="chart-row">
+                        <div class="chart-container half">
+                            <h3 class="chart-subtitle">Box Plot by State</h3>
+                            <div id="cycle-time-box-chart" class="chart"></div>
+                        </div>
+                        <div class="chart-container half">
+                            <h3 class="chart-subtitle">Story Points vs Cycle Time</h3>
+                            <div id="cycle-time-scatter-chart" class="chart"></div>
+                        </div>
                     </div>
+                </section>
+
+                <section class="dashboard-section">
+                    <h2 class="section-title">Bugs Breakdown</h2>
+                    <div class="chart-row">
+                        <div class="chart-container half">
+                            <h3 class="chart-subtitle">By Severity</h3>
+                            <div id="bugs-severity-chart" class="chart"></div>
+                        </div>
+                        <div class="chart-container half">
+                            <h3 class="chart-subtitle">By Area</h3>
+                            <div id="bugs-area-chart" class="chart"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="dashboard-section">
+                    <h2 class="section-title">Workload Distribution</h2>
+                    <div class="chart-container">
+                        <h3 class="chart-subtitle">Hours per Assignee</h3>
+                        <div id="workload-bar-chart" class="chart"></div>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-container half">
+                            <h3 class="chart-subtitle">Workload Percentage</h3>
+                            <div id="workload-pie-chart" class="chart"></div>
+                        </div>
+                        <div class="chart-container half">
+                            <h3 class="chart-subtitle">Assignee x Area Heatmap</h3>
+                            <div id="workload-heatmap-chart" class="chart"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="dashboard-section">
+                    <h2 class="section-title">Spillover Overview</h2>
+                    <div class="chart-container">
+                        <div id="spillover-chart" class="chart"></div>
+                    </div>
+                    <div class="table-container">
+                        <table id="spillover-table" class="data-table">
+                            <!-- Table will be dynamically populated -->
+                        </table>
+                    </div>
+                </section>
+
+                <section class="dashboard-section">
+                    <h2 class="section-title">Raw Data Summary</h2>
+                    <div class="raw-data-grid">
+                        <div class="table-container">
+                            <h3 class="table-title">Sprint Summary</h3>
+                            <table id="sprint-summary-table" class="data-table">
+                                <!-- Table will be dynamically populated -->
+                            </table>
+                        </div>
+                        <div class="table-container">
+                            <h3 class="table-title">Type Summary</h3>
+                            <table id="type-summary-table" class="data-table">
+                                <!-- Table will be dynamically populated -->
+                            </table>
+                        </div>
+                        <div class="table-container">
+                            <h3 class="table-title">Team Summary</h3>
+                            <table id="team-summary-table" class="data-table">
+                                <!-- Table will be dynamically populated -->
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Sprint History View -->
+            <div class="view-content" id="sprint-history-view" style="display: none;">
+                <div class="placeholder-content">
+                    <div class="placeholder-icon">📅</div>
+                    <h2>Sprint History</h2>
+                    <p>Sprint history view coming soon...</p>
                 </div>
             </div>
-        </div>
-        
-        <div class="input-container">
-            <div class="input-wrapper">
-                <input 
-                    type="text" 
-                    id="message-input" 
-                    placeholder="Ask about sprints, tickets, team performance..." 
-                    autocomplete="off"
-                />
+
+            <!-- Chatbot View -->
+            <div class="view-content" id="chatbot-view" style="display: none;">
+                <div class="chat-container" id="chat-container">
+                    <div class="welcome-message">
+                        <h2>👋 Welcome to Sprint Analytics Chatbot!</h2>
+                        <p>Ask me anything about your sprint data, team performance, or request visualizations.</p>
+                        <div class="suggestions">
+                            <div class="suggestion-chip" onclick="sendSuggestion('Show me overall sprint summary')">
+                                📊 Sprint Summary
+                            </div>
+                            <div class="suggestion-chip" onclick="sendSuggestion('How is the team performing?')">
+                                👥 Team Performance
+                            </div>
+                            <div class="suggestion-chip" onclick="sendSuggestion('Show me bug analysis')">
+                                🐛 Bug Analysis
+                            </div>
+                            <div class="suggestion-chip" onclick="sendSuggestion('Create a velocity chart')">
+                                📈 Velocity Chart
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="input-container">
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            id="message-input" 
+                            placeholder="Ask about sprints, tickets, team performance..." 
+                            autocomplete="off"
+                        />
+                    </div>
+                    <button id="send-button" onclick="sendMessage()">Send</button>
+                </div>
             </div>
-            <button id="send-button" onclick="sendMessage()">Send</button>
         </div>
     </div>
 
     <script src="/static/app.js"></script>
+    <script src="/static/dashboard.js"></script>
 </body>
 </html>

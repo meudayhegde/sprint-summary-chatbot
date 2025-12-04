@@ -16,6 +16,7 @@ import os
 from config import settings
 from data_analyzer import SprintDataAnalyzer
 from agent import SprintAnalysisAgent
+from dashboard_analyzer import DashboardAnalyzer
 
 # Configure logging
 logging.basicConfig(
@@ -47,12 +48,12 @@ templates = Jinja2Templates(directory="templates")
 # Initialize data analyzer and agent
 data_analyzer = None
 agent = None
-
+dashboard_analyzer = None
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize the data analyzer and agent on startup."""
-    global data_analyzer, agent
+    global data_analyzer, agent, dashboard_analyzer
     
     try:
         logger.info(f"Loading data from {settings.data_file}")
@@ -61,9 +62,13 @@ async def startup_event():
         logger.info(f"Initializing LangChain agent with {settings.llm_provider} provider")
         agent = SprintAnalysisAgent(data_analyzer)
         
+        logger.info("Initializing dashboard analyzer")
+        dashboard_analyzer = DashboardAnalyzer(data_analyzer.df)
+        
         logger.info("Application startup complete")
     except Exception as e:
         logger.error(f"Error during startup: {str(e)}")
+        raiser.error(f"Error during startup: {str(e)}")
         raise
 
 
@@ -148,9 +153,6 @@ async def get_team_performance():
     if not data_analyzer:
         raise HTTPException(status_code=500, detail="Data analyzer not initialized")
     
-    return data_analyzer.get_team_performance()
-
-
 @app.get("/api/bugs")
 async def get_bugs():
     """Get bug analysis."""
@@ -158,6 +160,79 @@ async def get_bugs():
         raise HTTPException(status_code=500, detail="Data analyzer not initialized")
     
     return data_analyzer.get_bug_analysis()
+
+
+# Dashboard API endpoints
+@app.get("/api/dashboard/kpis")
+async def get_dashboard_kpis():
+    """Get KPIs for dashboard."""
+    if not dashboard_analyzer:
+        raise HTTPException(status_code=500, detail="Dashboard analyzer not initialized")
+    
+    return dashboard_analyzer.get_kpis()
+
+
+@app.get("/api/dashboard/state-distribution")
+async def get_state_distribution():
+    """Get state distribution data."""
+    if not dashboard_analyzer:
+        raise HTTPException(status_code=500, detail="Dashboard analyzer not initialized")
+    
+    return dashboard_analyzer.get_state_distribution()
+
+
+@app.get("/api/dashboard/velocity")
+async def get_velocity_chart():
+    """Get velocity chart data."""
+    if not dashboard_analyzer:
+        raise HTTPException(status_code=500, detail="Dashboard analyzer not initialized")
+    
+    return dashboard_analyzer.get_velocity_chart()
+
+
+@app.get("/api/dashboard/cycle-time")
+async def get_cycle_time():
+    """Get cycle time analysis data."""
+    if not dashboard_analyzer:
+        raise HTTPException(status_code=500, detail="Dashboard analyzer not initialized")
+    
+    return dashboard_analyzer.get_cycle_time_analysis()
+
+
+@app.get("/api/dashboard/bugs")
+async def get_bugs_breakdown():
+    """Get bugs breakdown data."""
+    if not dashboard_analyzer:
+        raise HTTPException(status_code=500, detail="Dashboard analyzer not initialized")
+    
+    return dashboard_analyzer.get_bugs_breakdown()
+
+
+@app.get("/api/dashboard/workload")
+async def get_workload_distribution():
+    """Get workload distribution data."""
+    if not dashboard_analyzer:
+        raise HTTPException(status_code=500, detail="Dashboard analyzer not initialized")
+    
+    return dashboard_analyzer.get_workload_distribution()
+
+
+@app.get("/api/dashboard/spillover")
+async def get_spillover_overview():
+    """Get spillover overview data."""
+    if not dashboard_analyzer:
+        raise HTTPException(status_code=500, detail="Dashboard analyzer not initialized")
+    
+    return dashboard_analyzer.get_spillover_overview()
+
+
+@app.get("/api/dashboard/raw-data")
+async def get_raw_data():
+    """Get raw data summary."""
+    if not dashboard_analyzer:
+        raise HTTPException(status_code=500, detail="Dashboard analyzer not initialized")
+    
+    return dashboard_analyzer.get_raw_data()
 
 
 if __name__ == "__main__":

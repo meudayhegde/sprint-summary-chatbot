@@ -8,6 +8,35 @@ import plotly.express as px
 import pandas as pd
 from typing import Dict, Any, Optional
 import json
+import plotly.io as pio
+import numpy as np
+
+
+def _convert_to_serializable(obj):
+    """Recursively convert numpy arrays and Plotly binary-encoded data to JSON-serializable types."""
+    import base64
+    
+    if isinstance(obj, dict):
+        # Check if this is Plotly's binary-encoded array
+        if 'dtype' in obj and 'bdata' in obj:
+            # Decode binary data back to array
+            dtype = np.dtype(obj['dtype'])
+            bdata = base64.b64decode(obj['bdata'])
+            arr = np.frombuffer(bdata, dtype=dtype)
+            return arr.tolist()
+        else:
+            return {key: _convert_to_serializable(value) for key, value in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [_convert_to_serializable(item) for item in obj]
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif pd.isna(obj):
+        return None
+    return obj
 
 
 class ChartGenerator:
@@ -35,7 +64,7 @@ class ChartGenerator:
             template="plotly_white"
         )
         
-        return fig.to_json()
+        return json.dumps(_convert_to_serializable(fig.to_dict()))
     
     @staticmethod
     def create_sprint_velocity_chart(df: pd.DataFrame) -> str:
@@ -68,7 +97,7 @@ class ChartGenerator:
             legend_title="Status"
         )
         
-        return fig.to_json()
+        return json.dumps(_convert_to_serializable(fig.to_dict()))
     
     @staticmethod
     def create_team_performance_chart(df: pd.DataFrame) -> str:
@@ -102,7 +131,7 @@ class ChartGenerator:
             legend_title="Status"
         )
         
-        return fig.to_json()
+        return json.dumps(_convert_to_serializable(fig.to_dict()))
     
     @staticmethod
     def create_ticket_type_chart(df: pd.DataFrame) -> str:
@@ -129,7 +158,7 @@ class ChartGenerator:
             showlegend=False
         )
         
-        return fig.to_json()
+        return json.dumps(_convert_to_serializable(fig.to_dict()))
     
     @staticmethod
     def create_priority_distribution_chart(df: pd.DataFrame) -> str:
@@ -152,7 +181,7 @@ class ChartGenerator:
             template="plotly_white"
         )
         
-        return fig.to_json()
+        return json.dumps(_convert_to_serializable(fig.to_dict()))
     
     @staticmethod
     def create_timeline_chart(df: pd.DataFrame) -> str:
@@ -184,7 +213,7 @@ class ChartGenerator:
             yaxis_title="Tickets Created"
         )
         
-        return fig.to_json()
+        return json.dumps(_convert_to_serializable(fig.to_dict()))
     
     @staticmethod
     def create_bug_severity_chart(df: pd.DataFrame) -> str:
@@ -218,7 +247,7 @@ class ChartGenerator:
             template="plotly_white"
         )
         
-        return fig.to_json()
+        return json.dumps(_convert_to_serializable(fig.to_dict()))
     
     @staticmethod
     def create_completion_rate_chart(df: pd.DataFrame) -> str:
@@ -260,4 +289,4 @@ class ChartGenerator:
             template="plotly_white"
         )
         
-        return fig.to_json()
+        return json.dumps(_convert_to_serializable(fig.to_dict()))
