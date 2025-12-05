@@ -6,7 +6,7 @@
     <title>Sprint Analytics Dashboard</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/styles.css?v=4">
 </head>
 <body>
     <div class="app-container">
@@ -31,12 +31,27 @@
             </ul>
         </nav>
 
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
         <!-- Main Content Area -->
         <div class="main-content">
             <!-- Header -->
             <div class="header">
-                <h1 id="page-title">Dashboard</h1>
-                <p id="page-subtitle">Comprehensive sprint metrics and visualizations</p>
+                <button 
+                    class="nav-toggle" 
+                    id="nav-toggle" 
+                    aria-label="Toggle navigation" 
+                    aria-expanded="false"
+                    type="button"
+                >
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="header-text">
+                    <h1 id="page-title">Dashboard</h1>
+                    <p id="page-subtitle">Comprehensive sprint metrics and visualizations</p>
+                </div>
             </div>
 
             <!-- Dashboard View -->
@@ -183,45 +198,55 @@
             </div>
 
             <!-- Chatbot View -->
-            <div class="view-content" id="chatbot-view" style="display: none;">
-                <div class="chat-container" id="chat-container">
-                    <div class="welcome-message">
-                        <h2>👋 Welcome to Sprint Analytics Chatbot!</h2>
-                        <p>Ask me anything about your sprint data, team performance, or request visualizations.</p>
-                        <div class="suggestions">
-                            <div class="suggestion-chip" onclick="sendSuggestion('Show me overall sprint summary')">
-                                📊 Sprint Summary
-                            </div>
-                            <div class="suggestion-chip" onclick="sendSuggestion('How is the team performing?')">
-                                👥 Team Performance
-                            </div>
-                            <div class="suggestion-chip" onclick="sendSuggestion('Show me bug analysis')">
-                                🐛 Bug Analysis
-                            </div>
-                            <div class="suggestion-chip" onclick="sendSuggestion('Create a velocity chart')">
-                                📈 Velocity Chart
+            <div class="view-content chatbot-wrapper" id="chatbot-view" style="display: none;">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <h3>Chat History</h3>
+                        <button class="clear-chat-btn" id="clear-chat-btn" onclick="clearChat()" title="Clear chat history">
+                            <span class="icon">🗑️</span>
+                            <span>Clear Chat</span>
+                        </button>
+                    </div>
+                    
+                    <div class="chat-messages-wrapper" id="chat-container">
+                        <div class="welcome-message">
+                            <h2>👋 Welcome to Sprint Analytics Chatbot!</h2>
+                            <p>Ask me anything about your sprint data, team performance, or request visualizations.</p>
+                            <div class="suggestions">
+                                <div class="suggestion-chip" onclick="sendSuggestion('Show me overall sprint summary')">
+                                    📊 Sprint Summary
+                                </div>
+                                <div class="suggestion-chip" onclick="sendSuggestion('How is the team performing?')">
+                                    👥 Team Performance
+                                </div>
+                                <div class="suggestion-chip" onclick="sendSuggestion('Show me bug analysis')">
+                                    🐛 Bug Analysis
+                                </div>
+                                <div class="suggestion-chip" onclick="sendSuggestion('Create a velocity chart')">
+                                    📈 Velocity Chart
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="input-container">
-                    <div class="input-wrapper">
-                        <input 
-                            type="text" 
-                            id="message-input" 
-                            placeholder="Ask about sprints, tickets, team performance..." 
-                            autocomplete="off"
-                        />
+                    
+                    <div class="input-container">
+                        <div class="input-wrapper">
+                            <input 
+                                type="text" 
+                                id="message-input" 
+                                placeholder="Ask about sprints, tickets, team performance..." 
+                                autocomplete="off"
+                            />
+                        </div>
+                        <button id="send-button" onclick="sendMessage()">Send</button>
                     </div>
-                    <button id="send-button" onclick="sendMessage()">Send</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="/static/app.js"></script>
-    <script src="/static/dashboard.js"></script>
-    <script src="/static/sprint-history.js"></script>
+    <script src="/static/app.js?v=3"></script>
+    <script src="/static/dashboard.js?v=3"></script>
+    <script src="/static/sprint-history.js?v=3"></script>
 </body>
 </html>

@@ -2,14 +2,57 @@
  * Dashboard JavaScript - Handles dashboard data fetching and visualization
  */
 
+const NAV_STORAGE_KEY = 'sprint_analytics_active_view';
+
 // Navigation handling
 document.addEventListener('DOMContentLoaded', function() {
     initializeNavigation();
-    loadDashboard();
+    restoreActiveView();
 });
+
+function restoreActiveView() {
+    const savedView = localStorage.getItem(NAV_STORAGE_KEY);
+    
+    if (savedView) {
+        // Switch to the saved view
+        switchView(savedView);
+        
+        // Update nav item active state
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(nav => {
+            nav.classList.remove('active');
+            if (nav.getAttribute('data-view') === savedView) {
+                nav.classList.add('active');
+            }
+        });
+    }
+}
 
 function initializeNavigation() {
     const navItems = document.querySelectorAll('.nav-item');
+    const navToggle = document.getElementById('nav-toggle');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+    console.log('Navigation initialized', {
+        navToggle: navToggle,
+        overlay: sidebarOverlay,
+        navItems: navItems.length
+    });
+
+    const closeSidebar = () => {
+        document.body.classList.remove('nav-open');
+        if (navToggle) {
+            navToggle.setAttribute('aria-expanded', 'false');
+        }
+    };
+    
+    const toggleSidebar = () => {
+        const isOpen = document.body.classList.toggle('nav-open');
+        console.log('Sidebar toggled, isOpen:', isOpen);
+        if (navToggle) {
+            navToggle.setAttribute('aria-expanded', isOpen.toString());
+        }
+    };
     
     navItems.forEach(item => {
         item.addEventListener('click', function() {
@@ -19,7 +62,42 @@ function initializeNavigation() {
             // Update active state
             navItems.forEach(nav => nav.classList.remove('active'));
             this.classList.add('active');
+
+            // Save active view to localStorage
+            localStorage.setItem(NAV_STORAGE_KEY, view);
+
+            // Close sidebar after selection on smaller screens
+            closeSidebar();
         });
+    });
+
+    if (navToggle) {
+        navToggle.addEventListener('click', (e) => {
+            console.log('Nav toggle clicked');
+            e.preventDefault();
+            e.stopPropagation();
+            toggleSidebar();
+        });
+    } else {
+        console.error('Nav toggle button not found!');
+    }
+
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', () => {
+            closeSidebar();
+        });
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeSidebar();
+        }
+    });
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 900) {
+            closeSidebar();
+        }
     });
 }
 

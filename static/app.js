@@ -2,12 +2,19 @@ const chatContainer = document.getElementById('chat-container');
 const messageInput = document.getElementById('message-input');
 const sendButton = document.getElementById('send-button');
 
+const CHAT_STORAGE_KEY = 'sprint_analytics_chat_history';
+
 // Configure marked.js for markdown rendering
 marked.setOptions({
     breaks: true,
     gfm: true,
     headerIds: false,
     mangle: false
+});
+
+// Load chat history on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadChatHistory();
 });
 
 // Handle Enter key
@@ -38,6 +45,7 @@ async function sendMessage() {
 
     // Add user message
     addMessage(message, 'user');
+    saveChatHistory();
 
     // Show typing indicator
     const typingId = showTyping();
@@ -69,6 +77,9 @@ async function sendMessage() {
                 addChart(chart, `chart-${Date.now()}-${index}`);
             });
         }
+
+        // Save chat history
+        saveChatHistory();
     } catch (error) {
         removeTyping(typingId);
         addMessage('Sorry, I encountered an error. Please try again.', 'bot');
@@ -141,6 +152,93 @@ function addChart(chartData, id) {
     });
     
     chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+// Clear chat function
+function clearChat() {
+    if (confirm('Are you sure you want to clear the chat history?')) {
+        // Clear localStorage
+        localStorage.removeItem(CHAT_STORAGE_KEY);
+        
+        // Clear chat container
+        chatContainer.innerHTML = `
+            <div class="welcome-message">
+                <h2>👋 Welcome to Sprint Analytics Chatbot!</h2>
+                <p>Ask me anything about your sprint data, team performance, or request visualizations.</p>
+                <div class="suggestions">
+                    <div class="suggestion-chip" onclick="sendSuggestion('Show me overall sprint summary')">
+                        📊 Sprint Summary
+                    </div>
+                    <div class="suggestion-chip" onclick="sendSuggestion('How is the team performing?')">
+                        👥 Team Performance
+                    </div>
+                    <div class="suggestion-chip" onclick="sendSuggestion('Show me bug analysis')">
+                        🐛 Bug Analysis
+                    </div>
+                    <div class="suggestion-chip" onclick="sendSuggestion('Create a velocity chart')">
+                        📈 Velocity Chart
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Save chat history to localStorage
+function saveChatHistory() {
+    const messages = [];
+    const messageElements = chatContainer.querySelectorAll('.message');
+    
+    messageElements.forEach(msg => {
+        const sender = msg.classList.contains('user') ? 'user' : 'bot';
+        const content = msg.querySelector('.message-content');
+        if (content) {
+            messages.push({
+                sender: sender,
+                content: content.innerHTML,
+                isMarkdown: sender === 'bot'
+            });
+        }
+    });
+    
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+}
+
+// Load chat history from localStorage
+function loadChatHistory() {
+    const savedHistory = localStorage.getItem(CHAT_STORAGE_KEY);
+    
+    if (savedHistory) {
+        try {
+            const messages = JSON.parse(savedHistory);
+            
+            if (messages.length > 0) {
+                // Remove welcome message
+                const welcomeMsg = chatContainer.querySelector('.welcome-message');
+                if (welcomeMsg) {
+                    welcomeMsg.remove();
+                }
+                
+                // Restore messages
+                messages.forEach(msg => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `message ${msg.sender}`;
+                    
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = 'message-content';
+                    contentDiv.innerHTML = msg.content;
+                    
+                    messageDiv.appendChild(contentDiv);
+                    chatContainer.appendChild(messageDiv);
+                });
+                
+                // Scroll to bottom
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        } catch (error) {
+            console.error('Error loading chat history:', error);
+        }
+    }
 }
 
 // Focus input on load
