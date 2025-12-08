@@ -8,6 +8,7 @@ from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from langchain_community.chat_models import ChatOpenAI as ChatDeepSeek
 from typing import Optional, Dict, Any, List
 import pandas as pd
 import json
@@ -71,6 +72,15 @@ class SprintAnalysisAgent:
                 return ChatAnthropic(
                     model=settings.anthropic_model,
                     api_key=settings.anthropic_api_key,
+                    temperature=0.0
+                )
+            elif provider == "deepseek":
+                if not settings.deepseek_api_key:
+                    raise ValueError("DeepSeek API key not configured")
+                return ChatOpenAI(
+                    model=settings.deepseek_model,
+                    api_key=settings.deepseek_api_key,
+                    base_url="https://api.deepseek.com/v1",
                     temperature=0.0
                 )
             else:

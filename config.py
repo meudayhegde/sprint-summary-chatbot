@@ -6,17 +6,19 @@ class Settings(BaseSettings):
     """Application settings with environment variable support."""
     
     # LLM Configuration
-    llm_provider: Literal["openai", "gemini", "anthropic"] = "openai"
+    llm_provider: Literal["openai", "gemini", "anthropic", "deepseek"] = "openai"
     
     # API Keys
     openai_api_key: str = ""
     google_api_key: str = ""
     anthropic_api_key: str = ""
+    deepseek_api_key: str = ""
     
     # Model Names
     openai_model: str = "gpt-4-turbo-preview"
     gemini_model: str = "gemini-pro"
     anthropic_model: str = "claude-3-5-sonnet-20241022"
+    deepseek_model: str = "deepseek-chat"
     
     # Application Settings
     app_host: str = "0.0.0.0"
